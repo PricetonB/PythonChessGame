@@ -1,114 +1,5 @@
 
-# multiconn-client.py
 
-import sys
-import socket
-import selectors
-import types
-
-sel = selectors.DefaultSelector()
-messages = [b"Message 1 from client.", b"Message 2 from client."]
-
-def start_connections(host, port, num_conns):
-    server_addr = (host, port)
-    for i in range(0, num_conns):
-        connid = i + 1
-        print(f"Starting connection {connid} to {server_addr}")
-        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        sock.setblocking(False)
-        sock.connect_ex(server_addr)
-        events = selectors.EVENT_READ | selectors.EVENT_WRITE
-        data = types.SimpleNamespace(
-            connid=connid,
-            msg_total=sum(len(m) for m in messages),
-            recv_total=0,
-            messages=messages.copy(),
-            outb=b"",
-        )
-        sel.register(sock, events, data=data)
-
-
-
-def service_connection(key, mask):
-    sock = key.fileobj
-    data = key.data
-    if mask & selectors.EVENT_READ:
-        recv_data = sock.recv(1024)  # Should be ready to read
-        if recv_data:
-            data.outb += recv_data
-            print(f"Received {recv_data!r} from connection {data.connid}")
-            data.recv_total += len(recv_data)
-        else:
-            print(f"Closing connection {data.connid}")
-        if not recv_data or data.recv_total == data.msg_total:
-            print(f"Closing connection {data.connid}")
-            sel.unregister(sock)
-            sock.close()
-    if mask & selectors.EVENT_WRITE:
-        if not data.outb and data.messages:
-            data.outb = data.messages.pop(0)
-        if data.outb:
-            print(f"Echoing {data.outb!r} to {data.addr}")
-            print(f"Sending {data.outb!r} to connection {data.connid}")
-            sent = sock.send(data.outb)  # Should be ready to write
-            data.outb = data.outb[sent:]
-
-
-
-
-
-# Player setup
-player_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-server_address = ('192.168.0.138', 5000)  # Replace 'server_ip_address' with the actual IP of the server
-player_socket.connect(server_address)
-clients_turn = True
-assigned_color = ""
-print("Connected to the chess server.") 
-
-
-
-
-
-
-
-
-
-
-
-def get_color():
-    global clients_turn
-    global assigned_color
-    color = player_socket.recv(1024).decode('utf-8')
-    if color == "white":
-        assigned_color = "white"
-        clients_turn = True
-        print("You are playing as white.")
-    else:
-        assigned_color = "black"
-        clients_turn = False
-        print("You are playing as black.")
-
-
-def send_move(move):
-    global clients_turn
-    player_socket.send(move.encode('utf-8'))
-    clients_turn = False
-    print("Move sent.")
-
-
-def receive_move():
-    global clients_turn
-    clients_turn = True
-    move = player_socket.recv(1024).decode('utf-8')
-    print("Move received.")
-    return move
-
-
-
-
-
-
-'''
 import socket
 import selectors
 import types
@@ -175,6 +66,70 @@ try:
             service_connection(key, mask)
 finally:
     sel.close()
+
+
+
+
+
+
+'''
+# multiconn-client.py
+
+import sys
+import socket
+import selectors
+import types
+
+
+# Player setup
+player_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+server_address = ('192.168.0.138', 5000)  # Replace 'server_ip_address' with the actual IP of the server
+player_socket.connect(server_address)
+clients_turn = True
+assigned_color = ""
+print("Connected to the chess server.") 
+
+
+
+
+
+
+
+
+
+
+
+def get_color():
+    global clients_turn
+    global assigned_color
+    color = player_socket.recv(1024).decode('utf-8')
+    if color == "white":
+        assigned_color = "white"
+        clients_turn = True
+        print("You are playing as white.")
+    else:
+        assigned_color = "black"
+        clients_turn = False
+        print("You are playing as black.")
+
+
+def send_move(move):
+    global clients_turn
+    player_socket.send(move.encode('utf-8'))
+    clients_turn = False
+    print("Move sent.")
+
+
+def receive_move():
+    global clients_turn
+    clients_turn = True
+    move = player_socket.recv(1024).decode('utf-8')
+    print("Move received.")
+    return move
+
+
+
+
 
 
 '''

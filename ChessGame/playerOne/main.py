@@ -514,7 +514,10 @@ def main():
     # Initialize the board with pieces
     reset_board_map()
     print("attempting to get color")
-    chessClient.get_color()
+
+    #get color from server
+    chessClient.handle_server_response()
+
     print("got color")
 
     while running:
@@ -578,7 +581,7 @@ def main():
                             print("Clicked outside the board.")
                 
             else:
-                opponentsMove = chessClient.receive_move()
+                opponentsMove = chessClient.handle_server_response()
                 update_board(opponentsMove)
                 if Current_Player == 'white':
                     Current_Player = 'black'
