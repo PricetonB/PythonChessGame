@@ -516,7 +516,7 @@ def main():
     print("attempting to get color")
 
     #get color from server
-    chessClient.handle_server_response()
+    chessClient.check_server_response()
 
     print("got color")
 
@@ -581,7 +581,7 @@ def main():
                             print("Clicked outside the board.")
                 
             else:
-                opponentsMove = chessClient.handle_server_response()
+                opponentsMove = chessClient.check_server_response()
                 update_board(opponentsMove)
                 if Current_Player == 'white':
                     Current_Player = 'black'
@@ -603,6 +603,9 @@ def main():
     chessClient.player_socket.close()
     pygame.quit()
     sys.exit()
+    chessClient.sel.unregister(chessClient.player_socket)
+    chessClient.player_socket.close()
+
 
 #-------------------Run the game-------------------
 

@@ -59,13 +59,14 @@ def send_move(move):
     print(f"Move '{move}' is queued to be sent.")
 
 # Main event loop for handling the non-blocking I/O
-try:
-    while True:
-        events = sel.select(timeout=None)
+
+def check_server_response():
+    events = sel.select(timeout=1)
+    if events:
         for key, mask in events:
             service_connection(key, mask)
-finally:
-    sel.close()
+
+
 
 
 
