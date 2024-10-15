@@ -1,7 +1,6 @@
 import pygame
 import sys
 import chessClient as chessClient
-
 # Initialize Pygame
 pygame.init()
 
@@ -519,31 +518,49 @@ def main():
     chessClient.check_server_response()
 
     print("got color")
+    print(f"color is {chessClient.assigned_color}")
 
     while running:
-
 
 
         draw_chess_board()
         draw_pieces()
         draw_potential_moves()
 
-        if chessClient.assigned_color == "black":
-            flipped_screen = pygame.transform.flip(screen, False, True)
-            screen.blit(flipped_screen, (0, 0))            
+        if chessClient.assigned_color == "":
+            print("Waiting for color assignment from server.")
+            chessClient.check_server_response()
+            #create text on screen that says waiting on opponent
+            font = pygame.font.Font(None, 36)
+            text = font.render("Waiting on opponent...", True, WHITE)
+            text_rect = text.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2))
+            screen.blit(text, text_rect)
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    running = False  # Quit the game
 
-            
-
-        # Event handling
- 
+        else:
 
 
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                running = False  # Quit the game
-            if chessClient.clients_turn == True:
-                if event.type == pygame.MOUSEBUTTONDOWN:
+            if chessClient.assigned_color == "black":
+                flipped_screen = pygame.transform.flip(screen, False, True)
+                screen.blit(flipped_screen, (0, 0))            
 
+
+            # Event handling
+    
+
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    running = False  # Quit the game
+                
+
+                
+
+
+                if chessClient.clients_turn == True:
+                    if event.type == pygame.MOUSEBUTTONDOWN:
+                        print("since chess client client turn is true and click happened running the code")
                         mouse_pos = pygame.mouse.get_pos()
                         square_clicked = get_square_clicked(mouse_pos)
                         if square_clicked:
@@ -557,7 +574,6 @@ def main():
                                 if square_clicked in Current_Potential_Moves:
                                     print(f"Moving {Current_Selected_Piece} to {square_clicked}")
                                     clientData = Current_Selected_Piece + square_clicked
-
                                     Board_Map[square_clicked]['piece'] = Board_Map[Current_Selected_Piece]['piece']
                                     Board_Map[square_clicked]['color'] = Board_Map[Current_Selected_Piece]['color']
                                     Board_Map[Current_Selected_Piece]['piece'] = None
@@ -575,19 +591,19 @@ def main():
                                     print(f"{square_clicked} is not a potential move for {Current_Selected_Piece}")
                                     Current_Selected_Piece = None
                                     Current_Potential_Moves = []
-
-
                         else:
                             print("Clicked outside the board.")
-                
-            else:
-                opponentsMove = chessClient.check_server_response()
-                update_board(opponentsMove)
-                if Current_Player == 'white':
-                    Current_Player = 'black'
+                    
+
                 else:
-                    Current_Player = 'white'    
-                
+                    opponentsMove = chessClient.check_server_response()
+                    if opponentsMove != None:
+                        update_board(opponentsMove)
+                        if Current_Player == 'white':
+                            Current_Player = 'black'
+                        else:
+                            Current_Player = 'white'  
+
 
 
 

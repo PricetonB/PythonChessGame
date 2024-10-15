@@ -20,23 +20,29 @@ events = selectors.EVENT_READ | selectors.EVENT_WRITE
 data = types.SimpleNamespace(outb=b"")
 sel.register(player_socket, events, data=data)
 
-def service_connection(key, mask):
+def service_connection_for_outbound(key, mask):
+    sock = key.fileobj
+    data = key.data
+
+    if mask & selectors.EVENT_WRITE and data.outb:
+        print(f"Sending {data.outb!r}")
+        sent = sock.send(data.outb)  # Non-blocking write
+        data.outb = data.outb[sent:]
+
+
+def service_connection_for_inbound(key, mask):
     sock = key.fileobj
     data = key.data
 
     if mask & selectors.EVENT_READ:
         recv_data = sock.recv(1024)  # Non-blocking read
         if recv_data:
-            handle_server_response(recv_data.decode('utf-8'))
+            print(f"Received {recv_data!r} in service_connection_for_inbound returning to handle_server_response.")
+            return handle_server_response(recv_data.decode('utf-8'))
         else:
             print("Server closed the connection.")
             sel.unregister(sock)
             sock.close()
-
-    if mask & selectors.EVENT_WRITE and data.outb:
-        print(f"Sending {data.outb!r}")
-        sent = sock.send(data.outb)  # Non-blocking write
-        data.outb = data.outb[sent:]
 
 def handle_server_response(response):
     global clients_turn, assigned_color
@@ -49,7 +55,8 @@ def handle_server_response(response):
     else:
         # Handle moves
         clients_turn = True
-        print(f"Move received: {response}")
+        print(f"Move received: {response} in handle server rsponse. returning move to main.")
+        return response
 
 def send_move(move):
     global clients_turn
@@ -57,6 +64,7 @@ def send_move(move):
     data.outb = move.encode('utf-8')  # Set the move to be sent
     clients_turn = False
     print(f"Move '{move}' is queued to be sent.")
+    service_connection_for_outbound(sel.get_key(player_socket), selectors.EVENT_WRITE)
 
 # Main event loop for handling the non-blocking I/O
 
@@ -64,7 +72,10 @@ def check_server_response():
     events = sel.select(timeout=1)
     if events:
         for key, mask in events:
-            service_connection(key, mask)
+            move = service_connection_for_inbound(key, mask)
+            if move and move != "white" and move != "black":
+                print(f"Returning move: {move} from check_server_response.")
+                return move
 
 
 
