@@ -1,5 +1,4 @@
 
-
 import socket
 import selectors
 import types
@@ -16,6 +15,9 @@ server_socket.bind(('0.0.0.0', 5000))  # Bind to all network interfaces
 server_socket.listen()
 sel.register(server_socket, selectors.EVENT_READ, data=None)
 
+print("Server is waiting for players to connect...")
+
+
 def accept_connection(sock):
     """Accept incoming client connections."""
     conn, addr = sock.accept()
@@ -23,7 +25,7 @@ def accept_connection(sock):
     conn.setblocking(False)
     data = types.SimpleNamespace(outb=b"", connection_code="", color="", opponent=None)
     sel.register(conn, selectors.EVENT_READ | selectors.EVENT_WRITE, data=data)
-
+    print("Connection registered")
 
 def service_connection(key, mask):
     """Handle client connections for reading and writing."""
@@ -34,14 +36,24 @@ def service_connection(key, mask):
         recv_data = sock.recv(1024).decode()
         if recv_data:
             handle_message(sock, recv_data, data)
+            print("Data received.")
+            print(f"Data received details: {data}")
         else:
             print("Closing connection.")
             sel.unregister(sock)
             sock.close()
 
     if mask & selectors.EVENT_WRITE and data.outb:
+        print(f"Data sent: {data.outb}")
+        print(f"Data sent details: {data}")
         sent = sock.send(data.outb)
+        #print whats getting cleared from buffer
+        print(f"clearing from buffer after sending: {sent}")
         data.outb = data.outb[sent:]  # Clear buffer after sending
+        
+
+
+
 
 
 def handle_message(sock, message, data):
@@ -52,20 +64,25 @@ def handle_message(sock, message, data):
         data.color = color
         client_data[code] = sock
         print(f"Hosting game with code {code}, color {color}")
+        #send something back to client for testing
+        data.outb = f"HOSTED:{code}".encode()
 
     elif message.startswith("CONNECT:"):
+        print("Connecting players...")
         _, code = message.split(":")
         if code in client_data:
             opponent_sock = client_data[code]
             opponent_data = sel.get_key(opponent_sock).data
             data.opponent = opponent_sock
             opponent_data.opponent = sock
+            data.connection_code = code
             if opponent_data.color == "white":
                 data.color = "black"
             else:
                 data.color = "white"
 
             # Notify both players
+
             data.outb = f"CONNECTED:{opponent_data.color}".encode()
             opponent_data.outb = f"CONNECTED:{data.color}".encode()
             print(f"Connected players with code {code}")
@@ -74,6 +91,7 @@ def handle_message(sock, message, data):
             print(f"No matching host found for code {code}")
 
     elif message.startswith("MOVE:"):
+        print("trying to move")
         move = message.split("MOVE:")[1]
         if data.opponent:
             opponent_data = sel.get_key(data.opponent).data

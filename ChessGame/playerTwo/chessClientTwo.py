@@ -45,17 +45,21 @@ def attempt_to_receive_move():
 
 
 def host_connection(code, color):
+
     """Host a game by sending the HOST command."""
     data.outb = f"HOST:{code}:{color}".encode()
     data.connection_code = code
     data.color = color
-    sel.modify(player_socket, selectors.EVENT_WRITE, data=data)
+
+
+
 
 
 def join_hosted_connection(code):
     """Join an existing hosted game by sending the CONNECT command."""
     data.outb = f"CONNECT:{code}".encode()
-    sel.modify(player_socket, selectors.EVENT_WRITE, data=data)
+    data.connection_code = code
+
 
 
 # Private functions
@@ -69,66 +73,93 @@ def check_connection():
 
 
 def service_connection(key, mask):
-    global connected, assigned_color, clients_turn
+    global connected, assigned_color, clients_turn, connection_code
 
     """Handle events (read/write) for the socket."""
     sock = key.fileobj
     data = key.data
 
     if mask & selectors.EVENT_READ:
+        #if data is empty string print empty string sent
+        if not data.outb:
+            print("empty string sent to us")
+        print("got an event read")
         recv_data = sock.recv(1024).decode()  # Read server response
+
         if recv_data.startswith("MOVE:"):
+            print(f"Received move: {recv_data.split('MOVE:')[1]}")
             move = recv_data.split("MOVE:")[1]
             inbound_moves.put(move)
             clients_turn = True
         elif recv_data.startswith("CONNECTED:"):
+
             print("Connected to opponent!")
-            connected = True
+
             color = recv_data.split(":")[1]
             assigned_color = color
-            print(f"Assigned color: {color}")
+            connection_code = data.connection_code
             if color == "black":
                 clients_turn = False
+            else:
+                clients_turn = True
+            connected = True
+
+            #print global variables
+            print(f"connected: {connected}")
+            print(f"assigned_color: {assigned_color}")
+            print(f"clients_turn: {clients_turn}")
+            print(f"connection_code: {connection_code}")
 
         elif recv_data.startswith("CONNECT:"):
             print("No matching host found with that code.")
 
     if mask & selectors.EVENT_WRITE and data.outb:
+
         #if its a move set clients turn to false
         if data.outb.startswith(b"MOVE:"):
+            print(f"Sending move: {data.outb}")
             clients_turn = False
-        sent = sock.send(data.outb)  # Send data to server and return bytes sent
+        sent = sock.send(data.outb) 
+        print(f"after sending data celaring from buffer: {data.outb}") 
         data.outb = data.outb[sent:]  # Clear buffer after sending
 
 
 
 
 
-#TESTING
 
+
+#TESTING
 '''
 #player one
 input_code = input("Enter a four digit connection code: ")
 host_connection(input_code, "white")
 
+
+
 while True:
     check_connection()
-    move = attempt_to_receive_move()
-    if move:
-        print(f"Received move: {move}")
-        send_outgoing_move("e4")
+
     if connected:
-        print("Connected to opponent!")
-        break
-        
-'''
+        if clients_turn:
+            print("Your turn!")
+            input_move = input("Enter a move like A2A4: ")
+            send_outgoing_move(input_move)
+
+        else:
+            print("attempting to receive move")
+            move = attempt_to_receive_move()
+            if move:
+                print(f"Received move: {move}")
+            else:
+                print("No move received.")   
 
 
 #--------------------------------------------------------------
 
-
-
 '''
+
+
 #-------------------
 #player two
 
@@ -137,18 +168,27 @@ join_hosted_connection(input_code)
 
 while True:
     check_connection()
-    move = attempt_to_receive_move()
-    if move:
-        print(f"Received move: {move}")
-        send_outgoing_move("e5")
+
     if connected:
-        print("Connected to opponent!")
-        break
+        if clients_turn:
+            print("Your turn!")
+            input_move = input("Enter a move like A2A4: ")
+            send_outgoing_move(input_move)
+
+        else:
+            print("attempting to receive move")
+            move = attempt_to_receive_move()
+            if move:
+                print(f"Received move: {move}")
+            else:
+                print("No move received.")
+
+
 
 #--------------------------------------------------------------
 #--------------------------------------------------------------
         
-'''
+
 
 
 
