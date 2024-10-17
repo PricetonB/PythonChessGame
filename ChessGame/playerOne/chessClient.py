@@ -1,5 +1,5 @@
 
-
+#clients turn needs set at connection and not touched ungain unless pygame
 
 import socket
 import selectors
@@ -34,13 +34,20 @@ print("Connected to the chess server.")
 def send_outgoing_move(move):
     """Send a chess move to the server."""
     data.outb = f"MOVE:{move}".encode()
-    sel.modify(player_socket, selectors.EVENT_WRITE, data=data)
+    print(f"outb after send outgoing move: {data.outb}")
+    
 
 
 def attempt_to_receive_move():
     """Check if there are inbound moves, return if available."""
     if not inbound_moves.empty():
-        return inbound_moves.get()
+        print(f"Attempting to receive move from inbound move queue:")
+        print(f"inbound_move before pop: {inbound_moves}")
+        move = inbound_moves.get()
+        print(f"move received: {move}")
+        print(f"inbound_move after pop: {inbound_moves}")
+        return move
+        
     return None
 
 
@@ -87,10 +94,12 @@ def service_connection(key, mask):
         recv_data = sock.recv(1024).decode()  # Read server response
 
         if recv_data.startswith("MOVE:"):
-            print(f"Received move: {recv_data.split('MOVE:')[1]}")
+            print(f"Received move IN SERVICE FUNCTION: {recv_data.split('MOVE:')[1]}")
             move = recv_data.split("MOVE:")[1]
+            print(f"received move to put to inbound moves: {move}")
             inbound_moves.put(move)
-            clients_turn = True
+            print(f"inbound moves after put: {inbound_moves}")
+
         elif recv_data.startswith("CONNECTED:"):
 
             print("Connected to opponent!")
@@ -118,7 +127,7 @@ def service_connection(key, mask):
         #if its a move set clients turn to false
         if data.outb.startswith(b"MOVE:"):
             print(f"Sending move: {data.outb}")
-            clients_turn = False
+
         sent = sock.send(data.outb)  # Send data to server and return bytes sent
         print(f"after sending data celaring from buffer: {data.outb}")   
         data.outb = data.outb[sent:]  # Clear buffer after sending
@@ -144,14 +153,25 @@ while True:
             print("Your turn!")
             input_move = input("Enter a move like A2A4: ")
             send_outgoing_move(input_move)
+            clients_turn = False
+            print(f"connected: {connected}")
+            print(f"assigned_color: {assigned_color}")
+            print(f"clients_turn: {clients_turn}")
+            print(f"connection_code: {connection_code}")
+
 
         else:
-            print("attempting to receive move")
+
             move = attempt_to_receive_move()
             if move:
+                clients_turn = True
                 print(f"Received move: {move}")
-            else:
-                print("No move received.")   
+                print(f"connected: {connected}")
+                print(f"assigned_color: {assigned_color}")
+                print(f"clients_turn: {clients_turn}")
+                print(f"connection_code: {connection_code}")
+
+
 
 
 
@@ -176,13 +196,20 @@ join_hosted_connection(input_code)
 
 while True:
     check_connection()
-    move = attempt_to_receive_move()
-    if move:
-        print(f"Received move: {move}")
-        send_outgoing_move("e5")
+
     if connected:
-        print("Connected to opponent!")
-        break
+        if clients_turn:
+            print("Your turn!")
+            input_move = input("Enter a move like A2A4: ")
+            send_outgoing_move(input_move)
+
+        else:
+            print("attempting to receive move")
+            move = attempt_to_receive_move()
+            if move:
+                print(f"Received move: {move}")
+            else:
+                print("No move received.")
 
 #--------------------------------------------------------------
 #--------------------------------------------------------------

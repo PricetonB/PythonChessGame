@@ -65,7 +65,7 @@ def handle_message(sock, message, data):
         client_data[code] = sock
         print(f"Hosting game with code {code}, color {color}")
         #send something back to client for testing
-        data.outb = f"HOSTED:{code}".encode()
+
 
     elif message.startswith("CONNECT:"):
         print("Connecting players...")
