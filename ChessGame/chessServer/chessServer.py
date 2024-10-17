@@ -97,6 +97,8 @@ def handle_message(sock, message, data):
             opponent_data = sel.get_key(data.opponent).data
             opponent_data.outb = f"MOVE:{move}".encode()
             print(f"Relaying move: {move}")
+        else:
+            print("No opponent to relay move to.")
 
 
 # Main loop for server
