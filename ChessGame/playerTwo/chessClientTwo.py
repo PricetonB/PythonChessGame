@@ -122,10 +122,10 @@ def service_connection(key, mask):
 
 
 
-
+'''
 
 #TESTING
-'''
+
 #player one
 input_code = input("Enter a four digit connection code: ")
 host_connection(input_code, "white")
@@ -155,7 +155,7 @@ while True:
 
 #--------------------------------------------------------------
 
-'''
+
 
 
 #-------------------
@@ -191,7 +191,7 @@ while True:
 #--------------------------------------------------------------
         
 
-
+'''
 
 
 

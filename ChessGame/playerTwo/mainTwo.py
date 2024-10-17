@@ -1,9 +1,6 @@
 import pygame
 import sys
 import chessClientTwo as chessClient
-
-
-
 # Initialize Pygame
 pygame.init()
 
@@ -14,6 +11,7 @@ WHITE = (255, 255, 255)
 RED = (255, 0, 0)
 GREY = (128, 128, 128)
 YELLOW = (255, 255, 0)
+BLACK = (0, 0, 0)
 
 # Screen dimensions
 SCREEN_WIDTH = 1000
@@ -26,8 +24,10 @@ SQUARE_SIZE = 100
 Board_Map = {}
 Current_Potential_Moves = []
 Current_Selected_Piece = None
-Current_Player = 'white'
-
+running = True
+state = "main_menu"
+host_selected_color = None
+host_typed_text = ""
 
 
 
@@ -498,120 +498,376 @@ def draw_pieces():
                 screen.blit(piece_image, (data['x_coordinate'], data['y_coordinate']))
 
 
+#--------------------------------------------------------------------
+#main menu functions
+
+def draw_main_menu_buttons():
+    screen.fill((0, 0, 0))
+    #draw a button that says single player
+    #draw a button that says multiplayer
+    #draw a button that says exit
+    pygame.draw.rect(screen, RED, (SCREEN_WIDTH // 2 - 100, SCREEN_HEIGHT // 2 - 50, 200, 50))
+    pygame.draw.rect(screen, RED, (SCREEN_WIDTH // 2 - 100, SCREEN_HEIGHT // 2 + 50, 200, 50))
+    pygame.draw.rect(screen, RED, (SCREEN_WIDTH // 2 - 100, SCREEN_HEIGHT // 2 + 150, 200, 50))
+    #draw text on the buttons
+    font = pygame.font.Font(None, 36)
+    text = font.render("Single Player", True, WHITE)
+    text_rect = text.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 - 25))
+    screen.blit(text, text_rect)
+    text = font.render("Multiplayer", True, WHITE)
+    text_rect = text.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 + 75))
+    screen.blit(text, text_rect)
+    text = font.render("Exit", True, WHITE)
+    text_rect = text.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 + 175))
+    screen.blit(text, text_rect) 
+
+def draw_multiplayer_menu_buttons():
+    screen.fill((0, 0, 0))
+    # Draw buttons: Host Game, Join Game, and Back
+    pygame.draw.rect(screen, RED, (SCREEN_WIDTH // 2 - 100, SCREEN_HEIGHT // 2 - 50, 200, 50))
+    pygame.draw.rect(screen, RED, (SCREEN_WIDTH // 2 - 100, SCREEN_HEIGHT // 2 + 50, 200, 50))
+    pygame.draw.rect(screen, RED, (SCREEN_WIDTH // 2 - 100, SCREEN_HEIGHT // 2 + 150, 200, 50))
+    
+    # Draw text on the buttons
+    font = pygame.font.Font(None, 36)
+    text = font.render("Host Game", True, WHITE)
+    text_rect = text.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 - 25))
+    screen.blit(text, text_rect)
+    
+    text = font.render("Join Game", True, WHITE)
+    text_rect = text.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 + 75))
+    screen.blit(text, text_rect)
+    
+    text = font.render("Back", True, WHITE)
+    text_rect = text.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 + 175))
+    screen.blit(text, text_rect)
+
+def draw_host_game_menu_buttons():
+    global host_typed_text, host_selected_color
+    screen.fill((0, 0, 0))
+    # Draw buttons: Select Black, Select White, Back, and Start Game
+    pygame.draw.rect(screen, GREY, (SCREEN_WIDTH // 2 - 100, SCREEN_HEIGHT // 2 - 300, 200, 50))  # Black
+    pygame.draw.rect(screen, GREY, (SCREEN_WIDTH // 2 - 100, SCREEN_HEIGHT // 2 - 240, 200, 50))  # White
+    pygame.draw.rect(screen, RED, (SCREEN_WIDTH // 2 - 100, SCREEN_HEIGHT // 2 + 150, 200, 50))  # Back
+    pygame.draw.rect(screen, RED, (SCREEN_WIDTH // 2 - 100, SCREEN_HEIGHT // 2 + 250, 200, 50))  # Start Game
+    
+    font = pygame.font.Font(None, 36)
+    
+
+
+    # Text for buttons
+    if host_selected_color == "black":
+        text = font.render("Select Black", True, YELLOW)
+    else:
+        text = font.render("Select Black", True, WHITE)
+    text_rect = text.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 - 275))
+    screen.blit(text, text_rect)
+
+    if host_selected_color == "white":
+        text = font.render("Select White", True, YELLOW)
+    else:
+        text = font.render("Select White", True, WHITE)
+    text_rect = text.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 - 215))
+    screen.blit(text, text_rect)
+
+    text = font.render("Back", True, WHITE)
+    text_rect = text.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 + 175))
+    screen.blit(text, text_rect)
+
+    text = font.render("Start Game", True, WHITE)
+    text_rect = text.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 + 275))
+    screen.blit(text, text_rect)
+
+    # Game Code text
+    text = font.render("Enter Game Code:", True, WHITE)
+    text_rect = text.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 - 400))
+    screen.blit(text, text_rect)
+
+    # Text box for input (this part needs handling user input)
+    pygame.draw.rect(screen, WHITE, (SCREEN_WIDTH // 2 - 100, SCREEN_HEIGHT // 2 - 350, 200, 40))
+
+    # Draw global text_input variable text in text box 
+    text = font.render(host_typed_text, True, BLACK)
+    text_rect = text.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 - 325))
+    screen.blit(text, text_rect)
+
+def draw_join_game_menu_buttons():
+    screen.fill((0, 0, 0))
+    # Draw game code input and buttons: Back and Join Game
+    pygame.draw.rect(screen, RED, (SCREEN_WIDTH // 2 - 100, SCREEN_HEIGHT // 2 + 50, 200, 50))  # Back
+    pygame.draw.rect(screen, RED, (SCREEN_WIDTH // 2 - 100, SCREEN_HEIGHT // 2 + 150, 200, 50))  # Join Game
+    
+    font = pygame.font.Font(None, 36)
+    
+    # Game Code text
+    text = font.render("Enter Game Code:", True, WHITE)
+    text_rect = text.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 - 50))
+    screen.blit(text, text_rect)
+    
+    # Text box for input (this part needs handling user input)
+    pygame.draw.rect(screen, WHITE, (SCREEN_WIDTH // 2 - 100, SCREEN_HEIGHT // 2, 200, 40))
+    
+    # Text for buttons
+    text = font.render("Back", True, WHITE)
+    text_rect = text.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 + 75))
+    screen.blit(text, text_rect)
+
+    text = font.render("Join Game", True, WHITE)
+    text_rect = text.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 + 175))
+    screen.blit(text, text_rect)
+
+def main_menu_loop():
+    global state
+    global running
+
+    draw_main_menu_buttons()
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            running = False
+        if event.type == pygame.MOUSEBUTTONDOWN:
+            mouse_pos = pygame.mouse.get_pos()
+            x, y = mouse_pos
+            if SCREEN_WIDTH // 2 - 100 <= x <= SCREEN_WIDTH // 2 + 100:
+                if SCREEN_HEIGHT // 2 - 50 <= y <= SCREEN_HEIGHT // 2 + 50:
+                    print("Single Player clicked")
+                    state = "single_player"
+                elif SCREEN_HEIGHT // 2 + 50 <= y <= SCREEN_HEIGHT // 2 + 150:
+                    print("Multiplayer clicked")
+                    state = "multi_player"
+                elif SCREEN_HEIGHT // 2 + 150 <= y <= SCREEN_HEIGHT // 2 + 250:
+                    print("Exit clicked")
+                    running = False
+
+def multiplayer_menu_loop():
+    global state, running
+    draw_multiplayer_menu_buttons()
+    
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            running = False
+        if event.type == pygame.MOUSEBUTTONDOWN:
+            x, y = pygame.mouse.get_pos()
+            if SCREEN_WIDTH // 2 - 100 <= x <= SCREEN_WIDTH // 2 + 100:
+                if SCREEN_HEIGHT // 2 - 50 <= y <= SCREEN_HEIGHT // 2 + 50:
+                    print("Host Game clicked")
+                    state = "host_game"
+                elif SCREEN_HEIGHT // 2 + 50 <= y <= SCREEN_HEIGHT // 2 + 150:
+                    print("Join Game clicked")
+                    state = "join_game"
+                elif SCREEN_HEIGHT // 2 + 150 <= y <= SCREEN_HEIGHT // 2 + 250:
+                    print("Back clicked")
+                    state = "main_menu"
+
+def host_game_menu_loop():
+    global state, running, host_typed_text, host_selected_color
+    draw_host_game_menu_buttons()
+
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            running = False
+        if event.type == pygame.MOUSEBUTTONDOWN:
+            x, y = pygame.mouse.get_pos()
+            if SCREEN_WIDTH // 2 - 100 <= x <= SCREEN_WIDTH // 2 + 100:
+                if SCREEN_HEIGHT // 2 - 300 <= y <= SCREEN_HEIGHT // 2 - 250:
+                    print("Black selected")
+                    host_selected_color = "black"
+                    # handle black selection
+                elif SCREEN_HEIGHT // 2 - 240 <= y <= SCREEN_HEIGHT // 2 - 190:
+                    print("White selected")
+                    host_selected_color = "white"
+                    # handle white selection
+                elif SCREEN_HEIGHT // 2 + 150 <= y <= SCREEN_HEIGHT // 2 + 200:
+                    print("Back clicked")
+                    state = "multi_player"
+                elif SCREEN_HEIGHT // 2 + 250 <= y <= SCREEN_HEIGHT // 2 + 300:
+                    print("Start Game clicked")
+                    # ensure game code is entered and color is selected
+                    if host_typed_text and host_selected_color:
+                        print("Starting game...")
+                        chessClient.host_game(host_typed_text, host_selected_color)
+                        state = "multiplayer_game"
+                elif SCREEN_HEIGHT // 2 - 350 <= y <= SCREEN_HEIGHT // 2 - 310:
+                    print("Game code input clicked")
+                    state = "getting_input"
+                    pass
+
+def join_game_menu_loop():
+    global state, running
+    draw_join_game_menu_buttons()
+    code = ""
+    
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            running = False
+        if event.type == pygame.MOUSEBUTTONDOWN:
+            x, y = pygame.mouse.get_pos()
+            if SCREEN_WIDTH // 2 - 100 <= x <= SCREEN_WIDTH // 2 + 100:
+                if SCREEN_HEIGHT // 2 + 50 <= y <= SCREEN_HEIGHT // 2 + 100:
+                    print("Back clicked")
+                    state = "multi_player"
+                elif SCREEN_HEIGHT // 2 + 150 <= y <= SCREEN_HEIGHT // 2 + 200:
+                    print("Join Game clicked")
+                    if code:
+                        print(f"Joining game with code: {code}")
+                        chessClient.join_game(code)
+                        state = "multiplayer_game"
+
+
+
+
+
+
+
+def get_input():
+    global host_typed_text, state
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            pygame.quit()
+            quit()
+        elif event.type == pygame.KEYDOWN:
+            # If Enter is pressed, change the state
+            if event.key == pygame.K_RETURN:
+                print("Enter pressed")
+                state = "host_game"
+            # Handle the backspace separately to delete characters
+            elif event.key == pygame.K_BACKSPACE:
+                host_typed_text = host_typed_text[:-1]
+            else:
+                # Add the new character to the string
+                host_typed_text += event.unicode
+#multiplayer game loop
+
+def get_input_loop():
+    global host_typed_text
+    screen.fill((0, 0, 0))  # Clear screen with black
+    get_input()  # Call the function to get input
+
+    # Display typed text saying "Enter Game Code and Press Enter: "
+    font = pygame.font.Font(None, 36)
+    text = font.render("Enter Game Code and Press Enter: ", True, (255, 255, 255))
+    screen.blit(text, (50, 50))
+
+    # Display typed text (for demonstration purposes)
+    font = pygame.font.Font(None, 74)
+    text_surface = font.render(host_typed_text, True, (255, 255, 255))
+    screen.blit(text_surface, (50, 100))    
+
+
+def multiplayer_game_loop():
+    global running
+    global Current_Selected_Piece
+    global Current_Potential_Moves
+
+
+    draw_chess_board()
+    draw_pieces()
+    draw_potential_moves()
+
+    if chessClient.connected == True:
+        
+        if chessClient.assigned_color == "black":
+            flipped_screen = pygame.transform.flip(screen, False, True)
+            screen.blit(flipped_screen, (0, 0))            
+        # Event handling
+
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                running = False  # Quit the game
+            
+            
+            if chessClient.clients_turn == True:
+                
+                if event.type == pygame.MOUSEBUTTONDOWN:
+                    print("since chess client client turn is true and click happened running the code")
+                    mouse_pos = pygame.mouse.get_pos()
+                    square_clicked = get_square_clicked(mouse_pos)
+                    if square_clicked:
+                        print(f"Square clicked: {square_clicked}")
+                        #if there is no piece selected then select the piece and get potential moves
+                        if Current_Selected_Piece == None and Board_Map[square_clicked]['piece'] is not None and Board_Map[square_clicked]['color'] == chessClient.assigned_color:
+                            set_current_potential_moves(square_clicked)
+                            set_current_selected_piece(square_clicked)
+                        #if there is a piece selected then move the piece to the clicked square if its a potential move
+                        else:
+                            if square_clicked in Current_Potential_Moves:
+                                print(f"Moving {Current_Selected_Piece} to {square_clicked}")
+                                clientData = Current_Selected_Piece + square_clicked
+                                Board_Map[square_clicked]['piece'] = Board_Map[Current_Selected_Piece]['piece']
+                                Board_Map[square_clicked]['color'] = Board_Map[Current_Selected_Piece]['color']
+                                Board_Map[Current_Selected_Piece]['piece'] = None
+                                Board_Map[Current_Selected_Piece]['color'] = None
+                                Current_Selected_Piece = None
+                                Current_Potential_Moves = []
+                                chessClient.send_outgoing_move(clientData)
+                                chessClient.clients_turn = False
+                                print("Move sent to network in main game loop.")
+                            else:
+                                #if the clicked square is not a potential move then deselect the piece
+                                print(f"{square_clicked} is not a potential move for {Current_Selected_Piece}")
+                                Current_Selected_Piece = None
+                                Current_Potential_Moves = []
+                    else:
+                        print("Clicked outside the board.")
+                
+            else:
+                opponentsMove = chessClient.attempt_to_receive_move()
+                if opponentsMove != None:
+                    update_board(opponentsMove)
+                    chessClient.clients_turn = True
+
 
 
 
 #--------------------------------------------------------------------
 
+def single_player_game_loop():
+    pass
+
+
+#--------------------------------------------------------------------
+
+
 # Main Game Loop
 def main():
     # Game loop running flag
-    running = True
 
-    global Current_Player
+
     global Current_Selected_Piece
     global Current_Potential_Moves
+    global running
+
+
     
 
     # Initialize the board with pieces
     reset_board_map()
-    print("attempting to get color")
 
-    #get color from server
-    chessClient.check_server_response()
 
-    print("got color")
-    print(f"color is {chessClient.assigned_color}")
+
+
+
 
     while running:
+        #print(f"state: {state}")
 
-
-        draw_chess_board()
-        draw_pieces()
-        draw_potential_moves()
-
-        if chessClient.assigned_color == "":
-            print("Waiting for color assignment from server.")
-            chessClient.check_server_response()
-            #create text on screen that says waiting on opponent
-            font = pygame.font.Font(None, 36)
-            text = font.render("Waiting on opponent...", True, WHITE)
-            text_rect = text.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2))
-            screen.blit(text, text_rect)
-            for event in pygame.event.get():
-                if event.type == pygame.QUIT:
-                    running = False  # Quit the game
-
-        else:
-
-
-            if chessClient.assigned_color == "black":
-                flipped_screen = pygame.transform.flip(screen, False, True)
-                screen.blit(flipped_screen, (0, 0))            
-
-
-            # Event handling
-    
-
-            for event in pygame.event.get():
-                if event.type == pygame.QUIT:
-                    running = False  # Quit the game
-                
-
-                
-
-
-                if chessClient.clients_turn == True:
-                    if event.type == pygame.MOUSEBUTTONDOWN:
-                        print("since chess client client turn is true and click happened running the code")
-                        mouse_pos = pygame.mouse.get_pos()
-                        square_clicked = get_square_clicked(mouse_pos)
-                        if square_clicked:
-                            print(f"Square clicked: {square_clicked}")
-                            #if there is no piece selected then select the piece and get potential moves
-                            if Current_Selected_Piece == None and Board_Map[square_clicked]['piece'] is not None and Board_Map[square_clicked]['color'] == Current_Player:
-                                set_current_potential_moves(square_clicked)
-                                set_current_selected_piece(square_clicked)
-                            #if there is a piece selected then move the piece to the clicked square if its a potential move
-                            else:
-                                if square_clicked in Current_Potential_Moves:
-                                    print(f"Moving {Current_Selected_Piece} to {square_clicked}")
-                                    clientData = Current_Selected_Piece + square_clicked
-                                    Board_Map[square_clicked]['piece'] = Board_Map[Current_Selected_Piece]['piece']
-                                    Board_Map[square_clicked]['color'] = Board_Map[Current_Selected_Piece]['color']
-                                    Board_Map[Current_Selected_Piece]['piece'] = None
-                                    Board_Map[Current_Selected_Piece]['color'] = None
-                                    Current_Selected_Piece = None
-                                    Current_Potential_Moves = []
-                                    if Current_Player == 'white':
-                                        Current_Player = 'black'
-                                    else:
-                                        Current_Player = 'white'
-                                    chessClient.send_move(clientData)
-                                    print("Move sent to network in main game loop.")
-                                else:
-                                    #if the clicked square is not a potential move then deselect the piece
-                                    print(f"{square_clicked} is not a potential move for {Current_Selected_Piece}")
-                                    Current_Selected_Piece = None
-                                    Current_Potential_Moves = []
-                        else:
-                            print("Clicked outside the board.")
-                    
-
-                else:
-                    opponentsMove = chessClient.check_server_response()
-                    if opponentsMove != None:
-                        update_board(opponentsMove)
-                        if Current_Player == 'white':
-                            Current_Player = 'black'
-                        else:
-                            Current_Player = 'white'  
-
-
-
-
-
-
+        chessClient.check_connection()
+        if state == "main_menu":
+            main_menu_loop()
+        elif state == "multi_player":
+            multiplayer_menu_loop()
+        elif state == "single_player":
+            single_player_game_loop()
+        elif state == "host_game":
+            host_game_menu_loop()
+        elif state == "join_game":
+            join_game_menu_loop()
+        elif state == "multiplayer_game":   
+            multiplayer_game_loop()
+        elif state == "single_player_game":
+            single_player_game_loop()
+        elif state == "getting_input":
+            get_input_loop()
+            
 
         # Update the screen
         pygame.display.flip()
