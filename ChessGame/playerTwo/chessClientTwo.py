@@ -34,18 +34,14 @@ print("Connected to the chess server.")
 def send_outgoing_move(move):
     """Send a chess move to the server."""
     data.outb = f"MOVE:{move}".encode()
-    print(f"outb after send outgoing move: {data.outb}")
+
     
 
 
 def attempt_to_receive_move():
     """Check if there are inbound moves, return if available."""
     if not inbound_moves.empty():
-        print(f"Attempting to receive move from inbound move queue:")
-        print(f"inbound_move before pop: {inbound_moves}")
         move = inbound_moves.get()
-        print(f"move received: {move}")
-        print(f"inbound_move after pop: {inbound_moves}")
         return move
         
     return None
@@ -90,20 +86,15 @@ def service_connection(key, mask):
         #if data is empty string print empty string sent
         if not data.outb:
             print("empty string sent to us")
-        print("got an event read")
         recv_data = sock.recv(1024).decode()  # Read server response
 
         if recv_data.startswith("MOVE:"):
-            print(f"Received move IN SERVICE FUNCTION: {recv_data.split('MOVE:')[1]}")
             move = recv_data.split("MOVE:")[1]
-            print(f"received move to put to inbound moves: {move}")
             inbound_moves.put(move)
-            print(f"inbound moves after put: {inbound_moves}")
+
 
         elif recv_data.startswith("CONNECTED:"):
-
             print("Connected to opponent!")
-
             color = recv_data.split(":")[1]
             assigned_color = color
             connection_code = data.connection_code
@@ -113,11 +104,8 @@ def service_connection(key, mask):
                 clients_turn = True
             connected = True
 
-            #print global variables
-            print(f"connected: {connected}")
-            print(f"assigned_color: {assigned_color}")
-            print(f"clients_turn: {clients_turn}")
-            print(f"connection_code: {connection_code}")
+
+
 
         elif recv_data.startswith("CONNECT:"):
             print("No matching host found with that code.")
@@ -128,9 +116,9 @@ def service_connection(key, mask):
         if data.outb.startswith(b"MOVE:"):
             print(f"Sending move: {data.outb}")
 
-        sent = sock.send(data.outb)  # Send data to server and return bytes sent
-        print(f"after sending data celaring from buffer: {data.outb}")   
+        sent = sock.send(data.outb)  # Send data to server and return bytes sent  
         data.outb = data.outb[sent:]  # Clear buffer after sending
+
 
 
 
@@ -150,14 +138,17 @@ while True:
             print("Your turn!")
             input_move = input("Enter a move like A2A4: ")
             send_outgoing_move(input_move)
+            clients_turn = False
+
+
 
         else:
-            print("attempting to receive move")
+
             move = attempt_to_receive_move()
             if move:
+                clients_turn = True
                 print(f"Received move: {move}")
-            else:
-                print("No move received.")   
+
 
 
 #--------------------------------------------------------------
@@ -180,10 +171,7 @@ while True:
             input_move = input("Enter a move like A2A4: ")
             send_outgoing_move(input_move)
             clients_turn = False
-            print(f"connected: {connected}")
-            print(f"assigned_color: {assigned_color}")
-            print(f"clients_turn: {clients_turn}")
-            print(f"connection_code: {connection_code}")
+
 
 
         else:
@@ -192,10 +180,9 @@ while True:
             if move:
                 clients_turn = True
                 print(f"Received move: {move}")
-                print(f"connected: {connected}")
-                print(f"assigned_color: {assigned_color}")
-                print(f"clients_turn: {clients_turn}")
-                print(f"connection_code: {connection_code}")
+
+
+
 
 
 #--------------------------------------------------------------
