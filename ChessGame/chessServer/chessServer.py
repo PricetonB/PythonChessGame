@@ -37,7 +37,6 @@ def service_connection(key, mask):
         if recv_data:
             handle_message(sock, recv_data, data)
             print("Data received.")
-            print(f"Data received details: {data}")
         else:
             print("Closing connection.")
             sel.unregister(sock)
@@ -45,10 +44,7 @@ def service_connection(key, mask):
 
     if mask & selectors.EVENT_WRITE and data.outb:
         print(f"Data sent: {data.outb}")
-        print(f"Data sent details: {data}")
         sent = sock.send(data.outb)
-        #print whats getting cleared from buffer
-        print(f"clearing from buffer after sending: {sent}")
         data.outb = data.outb[sent:]  # Clear buffer after sending
         
 
@@ -83,20 +79,19 @@ def handle_message(sock, message, data):
 
             # Notify both players
 
-            data.outb = f"CONNECTED:{opponent_data.color}".encode()
-            opponent_data.outb = f"CONNECTED:{data.color}".encode()
+            data.outb = f"CONNECTED:{data.color}".encode()
+            opponent_data.outb = f"CONNECTED:{opponent_data.color}".encode()
             print(f"Connected players with code {code}")
         else:
             data.outb = "CONNECT:No matching host found.".encode()
             print(f"No matching host found for code {code}")
 
     elif message.startswith("MOVE:"):
-        print("trying to move")
         move = message.split("MOVE:")[1]
         if data.opponent:
             opponent_data = sel.get_key(data.opponent).data
             opponent_data.outb = f"MOVE:{move}".encode()
-            print(f"Relaying move: {move}")
+            print(f"Relaying move to opponent: {move}")
         else:
             print("No opponent to relay move to.")
 
@@ -115,60 +110,3 @@ def run_server():
 # Start the server
 run_server()
 
-
-'''
-
-import socket
-
-# Server setup
-server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-server_socket.bind(('0.0.0.0', 5000))  # Bind to all available interfaces on port 5000
-server_socket.listen(2)  # Allow two connections (for the two players)
-
-print("Server is waiting for players to connect...")
-
-# Accept connections from two clients
-player1_socket, player1_address = server_socket.accept()
-print(f"Player 1 connected from {player1_address}")
-
-player2_socket, player2_address = server_socket.accept()
-print(f"Player 2 connected from {player2_address}")
-
-
-def send_colors():
-    player1_socket.send("white".encode("utf-8"))
-    player2_socket.send("black".encode("utf-8"))
-    print("colors sent")
-
-
-# Function to relay moves between players
-def relay_moves():
-    while True:
-        # Receive a move from Player 1
-        move = player1_socket.recv(1024).decode('utf-8')
-        if not move:
-            break
-        print(f"Player 1 move: {move}")
-        # Send the move to Player 2
-        player2_socket.send(move.encode('utf-8'))
-        print("data sent to player 2")
-
-        # Receive a move from Player 2
-        move = player2_socket.recv(1024).decode('utf-8')
-        if not move:
-            break
-        print(f"Player 2 move: {move}")
-        # Send the move to Player 1
-        player1_socket.send(move.encode('utf-8'))
-        print("data sent to player 1")
-
-
-send_colors()
-relay_moves()
-
-# Close connections
-player1_socket.close()
-player2_socket.close()
-server_socket.close()
-
-'''
