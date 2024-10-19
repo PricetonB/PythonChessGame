@@ -1,8 +1,15 @@
+#TODO add a quit button to the main menu during game
+
+
+
 import pygame
 import sys
 import chessClient as chessClient
+import chessEngine as chessEngine
+import time
 # Initialize Pygame
 pygame.init()
+
 
 #-------------------Variables and Constants-------------------
 
@@ -21,12 +28,14 @@ TOP_LEFT_OF_BOARD_Y = 100
 SQUARE_SIZE = 100
 
 # Chess board hashmap (Board Map)
+engine = chessEngine.ChessEngine()
 Board_Map = {}
 Current_Potential_Moves = []
 Current_Selected_Piece = None
 running = True
 state = "main_menu"
 host_selected_color = None
+single_player_color = None
 host_typed_text = ""
 join_typed_text = ""
 
@@ -127,7 +136,31 @@ def reset_board_map():
         Board_Map[square]['piece'] = piece
         Board_Map[square]['color'] = color
 
+def update_board_map_from_string(board_string):
+    print("board string")
+    print(board_string)
+    """Updates the board map based on a string representation of the board."""
+    rows = board_string.strip().split('\n')
+    cols = 'ABCDEFGH'
+    
+    piece_map = {
+        'r': ('rook', 'black'), 'n': ('knight', 'black'), 'b': ('bishop', 'black'),
+        'q': ('queen', 'black'), 'k': ('king', 'black'), 'p': ('pawn', 'black'),
+        'R': ('rook', 'white'), 'N': ('knight', 'white'), 'B': ('bishop', 'white'),
+        'Q': ('queen', 'white'), 'K': ('king', 'white'), 'P': ('pawn', 'white'),
+        '.': (None, None)  # Empty squares
+    }
 
+    for row_idx, row in enumerate(rows):
+        for col_idx, piece_symbol in enumerate(row.split()):
+            square_id = cols[col_idx] + str(8 - row_idx)  # Convert row and col to square notation
+            piece, color = piece_map[piece_symbol]
+            Board_Map[square_id]['piece'] = piece
+            Board_Map[square_id]['color'] = color
+    print("Updated board map from string representation of the board.")
+    #print entire board map 
+    for square, data in Board_Map.items():
+        print(f"{square}: {data}")
 
 
 
@@ -633,6 +666,43 @@ def draw_waiting_on_opponent():
     text_rect = text.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT * 0.95))
     screen.blit(text, text_rect)
 
+def draw_single_player_menu_buttons():
+    global single_player_color
+    screen.fill((0, 0, 0))
+    # Draw buttons: Select Black, Select White, Back, and Start Game
+    pygame.draw.rect(screen, GREY, (SCREEN_WIDTH // 2 - 100, SCREEN_HEIGHT // 2 - 300, 200, 50))  # Black
+    pygame.draw.rect(screen, GREY, (SCREEN_WIDTH // 2 - 100, SCREEN_HEIGHT // 2 - 240, 200, 50))  # White
+    pygame.draw.rect(screen, RED, (SCREEN_WIDTH // 2 - 100, SCREEN_HEIGHT // 2 + 150, 200, 50))  # Back
+    pygame.draw.rect(screen, RED, (SCREEN_WIDTH // 2 - 100, SCREEN_HEIGHT // 2 + 250, 200, 50))  # Start Game
+    
+    font = pygame.font.Font(None, 36)
+    
+
+
+    # Text for buttons
+    if single_player_color == "black":
+        text = font.render("Select Black", True, YELLOW)
+    else:
+        text = font.render("Select Black", True, WHITE)
+    text_rect = text.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 - 275))
+    screen.blit(text, text_rect)
+
+    if single_player_color == "white":
+        text = font.render("Select White", True, YELLOW)
+    else:
+        text = font.render("Select White", True, WHITE)
+    text_rect = text.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 - 215))
+    screen.blit(text, text_rect)
+
+    text = font.render("Back", True, WHITE)
+    text_rect = text.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 + 175))
+    screen.blit(text, text_rect)
+
+    text = font.render("Start Game", True, WHITE)
+    text_rect = text.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 + 275))
+    screen.blit(text, text_rect)
+
+
 def main_menu_loop():
     global state
     global running
@@ -735,6 +805,36 @@ def join_game_menu_loop():
                     state = "getting_join_input"
                     pass
 
+def single_player_menu_loop():
+    global running, single_player_color, state
+    draw_single_player_menu_buttons()
+
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            running = False
+        if event.type == pygame.MOUSEBUTTONDOWN:
+            x, y = pygame.mouse.get_pos()
+            if SCREEN_WIDTH // 2 - 100 <= x <= SCREEN_WIDTH // 2 + 100:
+                if SCREEN_HEIGHT // 2 - 300 <= y <= SCREEN_HEIGHT // 2 - 250:
+                    print("Black selected")
+                    single_player_color = "black"
+                    chessClient.clients_turn = False
+                    # handle black selection
+                elif SCREEN_HEIGHT // 2 - 240 <= y <= SCREEN_HEIGHT // 2 - 190:
+                    print("White selected")
+                    single_player_color = "white"
+                    chessClient.clients_turn = True
+                    # handle white selection
+                elif SCREEN_HEIGHT // 2 + 150 <= y <= SCREEN_HEIGHT // 2 + 200:
+                    print("Back clicked")
+                    state = "main_menu"
+                elif SCREEN_HEIGHT // 2 + 250 <= y <= SCREEN_HEIGHT // 2 + 300:
+                    print("Start Game clicked")
+                    # ensure game code is entered and color is selected
+                    if single_player_color:
+                        print("Starting game...")
+                        chessClient.assigned_color = single_player_color
+                        state = "single_player_game"
 
 
 
@@ -776,6 +876,71 @@ def get_input_loop(current_text):
     
     return current_text
 
+
+def single_player_game_loop():
+    global running
+    global Current_Selected_Piece
+    global Current_Potential_Moves
+    global single_player_color
+    global engine
+
+
+    draw_chess_board()
+    draw_pieces()
+    draw_potential_moves()
+
+    if chessClient.assigned_color == "black":
+        flipped_screen = pygame.transform.flip(screen, False, True)
+        screen.blit(flipped_screen, (0, 0))            
+        # Event handling
+
+
+
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            running = False  # Quit the game
+        
+        
+        if chessClient.clients_turn == True:
+            
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                print("since chess client client turn is true and click happened running the code")
+                mouse_pos = pygame.mouse.get_pos()
+                square_clicked = get_square_clicked(mouse_pos)
+                if square_clicked:
+                    print(f"Square clicked: {square_clicked}")
+                    #if there is no piece selected then select the piece and get potential moves
+                    if Current_Selected_Piece == None and Board_Map[square_clicked]['piece'] is not None and Board_Map[square_clicked]['color'] == chessClient.assigned_color:
+                        set_current_potential_moves(square_clicked)
+                        set_current_selected_piece(square_clicked)
+                    #if there is a piece selected then move the piece to the clicked square if its a potential move
+                    else:
+                        if square_clicked in Current_Potential_Moves:
+                            print(f"Moving {Current_Selected_Piece} to {square_clicked}")
+                            clientData = Current_Selected_Piece + square_clicked
+                            Board_Map[square_clicked]['piece'] = Board_Map[Current_Selected_Piece]['piece']
+                            Board_Map[square_clicked]['color'] = Board_Map[Current_Selected_Piece]['color']
+                            Board_Map[Current_Selected_Piece]['piece'] = None
+                            Board_Map[Current_Selected_Piece]['color'] = None
+                            Current_Selected_Piece = None
+                            Current_Potential_Moves = []
+                            engine.send_move(clientData)
+                            chessClient.clients_turn = False
+                            print("Move sent to chess engine in main game loop.")
+                        else:
+                            #if the clicked square is not a potential move then deselect the piece
+                            print(f"{square_clicked} is not a potential move for {Current_Selected_Piece}")
+                            Current_Selected_Piece = None
+                            Current_Potential_Moves = []
+                else:
+                    print("Clicked outside the board.")
+        else:
+            #wait one second
+            time.sleep(1)
+            opponentsMove = engine.get_engine_move()
+            if opponentsMove != None:
+                update_board(opponentsMove)
+                chessClient.clients_turn = True
 
 
 def multiplayer_game_loop():
@@ -856,8 +1021,7 @@ def multiplayer_game_loop():
 
 #--------------------------------------------------------------------
 
-def single_player_game_loop():
-    pass
+
 
 
 #--------------------------------------------------------------------
@@ -895,7 +1059,7 @@ def main():
         elif state == "multi_player":
             multiplayer_menu_loop()
         elif state == "single_player":
-            single_player_game_loop()
+            single_player_menu_loop()
         elif state == "host_game":
             host_game_menu_loop()
         elif state == "join_game":
